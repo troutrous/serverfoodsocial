@@ -129,7 +129,7 @@ const GetAccountByUserSignin = (userSignin) => {
   });
 };
 
-const GetUUID = () => {
+module.exports.GetUUID = () => {
   return new Promise((resolve, reject) => {
     sql.query(`SELECT UUID() AS "uuid"`, (err, uuid) => {
       if (err) {
@@ -295,3 +295,18 @@ module.exports.SignInWithGoogle = async (user, result) => {
     result(error, null);
   }
 }
+
+module.exports.VerifyToken = async (tokenRequest, result) => {
+  try {
+    const verified = await jwt.verify(tokenRequest, process.env.TOKEN_SECRET);
+    if (verified) {
+      const profile = await GetProfileById({ userID: verified._id });
+      result(null, {
+        token: tokenRequest, profile: profile
+      });
+    }
+
+  } catch (error) {
+    result(error, null);
+  }
+};

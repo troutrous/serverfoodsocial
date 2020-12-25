@@ -46,6 +46,21 @@ module.exports.SignUp = (req, res) => {
     }
   });
 };
+module.exports.VerifyToken = (req, res) => {
+  AuthModel.VerifyToken(req.headers.authorization, (err, data) => {
+    if (err) {
+      res.status(401).json({
+        message: err.message || "Something has been error...",
+      });
+      return;
+    } else {
+      res.status(200).header("Authorization", `Bearer ${data.token}`).json({
+        ...data.profile
+      });
+      return;
+    }
+  });
+};
 
 module.exports.CheckExistProfileByEmail = (req, res) => {
   AuthModel.CheckExistProfileByEmail(req.body, (err, data) => {
