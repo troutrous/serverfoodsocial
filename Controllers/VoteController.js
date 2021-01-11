@@ -1,7 +1,7 @@
 const VoteModel = require("../Models/VoteModel");
 
-module.exports.GetVoteByID = (req, res) => {
-    VoteModel.GetVoteByID(req.body, (err, data) => {
+module.exports.GetByID = (req, res) => {
+    VoteModel.GetByID(req.body, (err, data) => {
         if (err) {
             res.status(401).json({
                 message: err.message || "Something has been error...",
@@ -15,8 +15,8 @@ module.exports.GetVoteByID = (req, res) => {
         }
     });
 };
-module.exports.GetVoteByPost = (req, res) => {
-    VoteModel.GetVoteByPost(req.body, (err, data) => {
+module.exports.GetByPost = (req, res) => {
+    VoteModel.GetByPost(req.body, (err, data) => {
         if (err) {
             res.status(401).json({
                 message: err.message || "Something has been error...",

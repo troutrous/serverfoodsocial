@@ -1,7 +1,7 @@
 const CommentModel = require("../Models/CommentModel");
 
-module.exports.GetCommentByID = (req, res) => {
-    CommentModel.GetCommentByID(req.body, (err, data) => {
+module.exports.GetByID = (req, res) => {
+    CommentModel.GetByID(req.body, (err, data) => {
         if (err) {
             res.status(401).json({
                 message: err.message || "Something has been error...",
@@ -15,8 +15,8 @@ module.exports.GetCommentByID = (req, res) => {
         }
     });
 };
-module.exports.GetCommentByPost = (req, res) => {
-    CommentModel.GetCommentByPost(req.body, (err, data) => {
+module.exports.GetByPost = (req, res) => {
+    CommentModel.GetByPost(req.body, (err, data) => {
         if (err) {
             res.status(401).json({
                 message: err.message || "Something has been error...",

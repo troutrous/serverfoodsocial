@@ -1,7 +1,7 @@
 const ContentModel = require("../Models/ContentModel");
 
-module.exports.GetContentByID = (req, res) => {
-    ContentModel.GetContentByID(req.body, (err, data) => {
+module.exports.GetByID = (req, res) => {
+    ContentModel.GetByID(req.body, (err, data) => {
         if (err) {
             res.status(401).json({
                 message: err.message || "Something has been error...",
@@ -16,8 +16,8 @@ module.exports.GetContentByID = (req, res) => {
     });
 };
 
-module.exports.GetContentByPost = (req, res) => {
-    ContentModel.GetContentByPost(req.body, (err, data) => {
+module.exports.GetByPost = (req, res) => {
+    ContentModel.GetByPost(req.body, (err, data) => {
         if (err) {
             res.status(401).json({
                 message: err.message || "Something has been error...",

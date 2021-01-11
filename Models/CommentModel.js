@@ -1,7 +1,7 @@
 const sql = require("./ConnectMySQL");
 const { GetUUID } = require('./AuthModel');
 
-module.exports.GetCommentByID = async (getRequest, result) => {
+module.exports.GetByID = async (getRequest, result) => {
     sql.query(
         `SELECT tb_comment.commentID, tb_comment.postID, tb_comment.commentText, tb_comment.commentCreatedAt, tb_comment.commentParentID, tb_comment.userID
         FROM tb_comment
@@ -9,7 +9,7 @@ module.exports.GetCommentByID = async (getRequest, result) => {
         [getRequest.commentID],
         (err, data) => {
             if (err) {
-                result(err, null)
+                result(err, null);
             } else {
                 result(null, data);
             }
@@ -17,21 +17,49 @@ module.exports.GetCommentByID = async (getRequest, result) => {
     );
 };
 
-module.exports.GetCommentByPost = async (getRequest, result) => {
+module.exports.GetByPost = async (getRequest, result) => {
     sql.query(
-        `SELECT tb_comment.commentID, tb_comment.postID, tb_comment.commentText, tb_comment.commentCreatedAt, tb_comment.commentParentID, tb_comment.userID
-        FROM tb_comment
-        WHERE tb_comment.postID = ?
-        ORDER BY tb_comment.commentCreatedAt DESC`,
+        `SELECT tb_comment.*, tb_profile.userFirstname, tb_profile.userLastname, tb_image.imageSource
+        FROM tb_comment, tb_profile, tb_image
+        WHERE tb_comment.userID = tb_profile.userID AND tb_profile.imageID = tb_image.imageID AND tb_comment.postID = ?
+        ORDER BY tb_comment.commentCreatedAt ASC`,
         [getRequest.postID],
         (err, data) => {
             if (err) {
                 result(err, null)
             } else {
-                result(null, data);
+                const dataResponse = [];
+                data.forEach(comment => {
+                    comment.imageSource = process.env.BASE_URL + comment.imageSource;
+                    if (comment.commentID == comment.commentParentID) {
+                        comment.replys = [];
+                        dataResponse.push(comment);
+                    } else {
+                        dataResponse.find(item => item.commentID == comment.commentParentID).replys.push(comment);
+                    }
+                })
+                result(null, dataResponse);
             }
         }
     );
+};
+module.exports.GetCommentByPostPromise = async (getRequest) => {
+    return new Promise((resolve, reject) => {
+        sql.query(
+            `SELECT tb_comment.commentID, tb_comment.postID, tb_comment.commentText, tb_comment.commentCreatedAt, tb_comment.commentParentID, tb_comment.userID
+            FROM tb_comment
+            WHERE tb_comment.postID = ?
+            ORDER BY tb_comment.commentCreatedAt ASC`,
+            [getRequest.postID],
+            (err, data) => {
+                if (err) {
+                    reject(err)
+                } else {
+                    resolve(data);
+                }
+            }
+        );
+    })
 };
 
 module.exports.Create = async (getRequest, result) => {
@@ -40,7 +68,7 @@ module.exports.Create = async (getRequest, result) => {
         getRequest.commentParentID = uuid;
     }
     if (getRequest.commentCreatedAt == null) {
-        getRequest.commentCreatedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        getRequest.commentCreatedAt = new Date();
     }
     sql.query(
         `INSERT INTO tb_comment (tb_comment.commentID, tb_comment.commentText, tb_comment.commentCreatedAt, tb_comment.postID, tb_comment.commentParentID, tb_comment.userID) VALUES (?, ?, ?, ?, ?, ?)`,

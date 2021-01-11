@@ -1,7 +1,8 @@
 const sql = require("./ConnectMySQL");
 const { GetUUID } = require('./AuthModel');
+const upload = require('../multer');
 
-module.exports.GetImageByID = async (getRequest, result) => {
+module.exports.GetByID = async (getRequest, result) => {
     sql.query(
         `SELECT tb_image.imageID, tb_image.imageSource, tb_image.postID 
         FROM tb_image
@@ -17,7 +18,7 @@ module.exports.GetImageByID = async (getRequest, result) => {
     );
 };
 
-module.exports.GetImageByPost = async (getRequest, result) => {
+module.exports.GetByPost = async (getRequest, result) => {
     sql.query(
         `SELECT tb_image.imageID, tb_image.imageSource, tb_image.postID 
         FROM tb_image
@@ -75,4 +76,60 @@ module.exports.DeleteByID = async (getRequest, result) => {
             }
         }
     );
+};
+
+
+
+module.exports.CreateImagePromise = async (getRequest) => {
+    const uuid = await GetUUID();
+    return new Promise((resolve, reject) => {
+        sql.query(
+            `INSERT INTO tb_image (tb_image.imageID, tb_image.imageSource, tb_image.postID) VALUES (?, ?, ?)`,
+            [uuid, getRequest.filepath, getRequest.postID],
+            (err, data) => {
+                if (err) {
+                    reject(new Error("Error upload image"));
+                } else {
+                    resolve({ imageID: uuid, ...data });
+                }
+            }
+        );
+    })
+};
+module.exports.GetImageByPostPromise = async (getRequest) => {
+    return new Promise((resolve, reject) => {
+        sql.query(
+            `SELECT tb_image.imageID, tb_image.imageSource
+            FROM tb_image
+            WHERE tb_image.postID = ?`,
+            [getRequest.postID],
+            (err, data) => {
+                if (err) {
+                    reject(new Error("Error get image"));
+                } else {
+                    data.forEach(image => {
+                        image.imageSource = process.env.BASE_URL + image.imageSource;
+                    })
+                    resolve(data);
+                }
+            }
+        );
+    })
+};
+module.exports.GetImageByIDPromise = async (getRequest) => {
+    return new Promise((resolve, reject) => {
+        sql.query(
+            `SELECT tb_image.imageID, tb_image.imageSource
+            FROM tb_image
+            WHERE tb_image.imageID = ?`,
+            [getRequest.imageID],
+            (err, data) => {
+                if (err) {
+                    reject(new Error("Error get image"));
+                } else {
+                    resolve(data);
+                }
+            }
+        );
+    })
 };

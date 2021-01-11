@@ -1,7 +1,7 @@
 const sql = require("./ConnectMySQL");
 const { GetUUID } = require('./AuthModel');
 
-module.exports.GetVoteByID = async (getRequest, result) => {
+module.exports.GetByID = async (getRequest, result) => {
     sql.query(
         `SELECT tb_vote.voteID, tb_vote.voteValue, tb_vote.voteCreatedAt, tb_vote.postID, tb_vote.userID 
         FROM tb_vote
@@ -16,7 +16,7 @@ module.exports.GetVoteByID = async (getRequest, result) => {
         }
     );
 };
-module.exports.GetVoteByPost = async (getRequest, result) => {
+module.exports.GetByPost = async (getRequest, result) => {
     sql.query(
         `SELECT tb_vote.voteID, tb_vote.voteValue, tb_vote.voteCreatedAt, tb_vote.postID, tb_vote.userID 
         FROM tb_vote
@@ -31,6 +31,42 @@ module.exports.GetVoteByPost = async (getRequest, result) => {
             }
         }
     );
+};
+module.exports.GetVoteByPostPromise = async (getRequest, result) => {
+    return new Promise((resolve, reject) => {
+        sql.query(
+            `SELECT tb_vote.voteID, tb_vote.voteValue, tb_vote.voteCreatedAt, tb_vote.postID, tb_vote.userID, tb_profile.userFirstname, tb_profile.userLastname 
+            FROM tb_vote, tb_profile
+            WHERE tb_vote.userID = tb_profile.userID AND tb_vote.postID = ?
+            ORDER BY tb_vote.voteCreatedAt DESC`,
+            [getRequest.postID],
+            (err, data) => {
+                if (err) {
+                    reject(err)
+                } else {
+                    resolve(data);
+                }
+            }
+        );
+    })
+};
+module.exports.GetVoteByPostAndUserPromise = async (getRequest) => {
+    return new Promise((resolve, reject) => {
+        sql.query(
+            `SELECT tb_vote.voteID, tb_vote.voteValue, tb_vote.voteCreatedAt, tb_vote.postID, tb_vote.userID 
+            FROM tb_vote
+            WHERE tb_vote.postID = ? AND tb_vote.userID = ?
+            ORDER BY tb_vote.voteCreatedAt DESC`,
+            [getRequest.postID, getRequest.userID],
+            (err, data) => {
+                if (err) {
+                    reject(err)
+                } else {
+                    resolve(data);
+                }
+            }
+        );
+    })
 };
 
 module.exports.Create = async (getRequest, result) => {

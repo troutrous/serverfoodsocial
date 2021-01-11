@@ -11,3 +11,14 @@ module.exports.VerifyToken = (req, res, next) => {
       }
     });
   };
+
+
+  module.exports.VerifyTokenMiddleware = (req, res, next) => {
+    VeryfyTokenModel.VerifyToken(req.headers.authorization, (err, data) => {
+      if (err) {
+        next();
+      } else {
+        res.status(200).json(data);
+      }
+    });
+  };

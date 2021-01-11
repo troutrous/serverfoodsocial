@@ -1,6 +1,9 @@
 const sql = require("./ConnectMySQL");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { OAuth2Client } = require('google-auth-library');
+const CLIENT_ID = "535966501060-u53clbgqvolg9iso836ldg10on8egmeo.apps.googleusercontent.com";
+const client = new OAuth2Client(CLIENT_ID);
 
 const ComparePassword = (authRequest, account) => {
   return new Promise((resolve, reject) => {
@@ -16,18 +19,22 @@ const ComparePassword = (authRequest, account) => {
 const GetProfileById = (account) => {
   return new Promise((resolve, reject) => {
     sql.query(
-      `SELECT * FROM tb_profile WHERE tb_profile.userID = ?`,
+      `SELECT tb_profile.*, tb_image.imageSource FROM tb_profile, tb_image WHERE tb_profile.imageID = tb_image.imageID AND tb_profile.userID = ?`,
       [account.userID],
       (err, profile) => {
         if (err) {
           reject(err);
         }
-        if (profile.length > 0) resolve(profile[0]);
+        if (profile.length > 0) {
+          profile[0].imageSource = process.env.BASE_URL + profile[0].imageSource;
+        } resolve(profile[0]);
         reject(new Error('Profile does not exist.'));
       }
     );
   });
 }
+
+module.exports.GetProfileById = GetProfileById;
 
 const CreateToken = (profile) => {
   return jwt.sign({ _id: profile.userID, _typeProfile: profile.typeprofileID }, process.env.TOKEN_SECRET);
@@ -129,7 +136,7 @@ const GetAccountByUserSignin = (userSignin) => {
   });
 };
 
-module.exports.GetUUID = () => {
+const GetUUID = () => {
   return new Promise((resolve, reject) => {
     sql.query(`SELECT UUID() AS "uuid"`, (err, uuid) => {
       if (err) {
@@ -140,6 +147,8 @@ module.exports.GetUUID = () => {
     });
   });
 };
+
+module.exports.GetUUID = GetUUID;
 
 const CreateAccount = (uuid, signUpRequest) => {
   return new Promise(async (resolve, reject) => {
@@ -194,7 +203,7 @@ const CreateProfile = (newUUID = null, signUpRequest = null) => {
   return new Promise(async (resolve, reject) => {
     sql.query(
       `INSERT INTO tb_profile 
-      (tb_profile.userID, tb_profile.userFirstname, tb_profile.userLastname,tb_profile.userGender, tb_profile.userBOD, tb_profile.userEmail, tb_profile.userPhone, tb_profile.userAddress, tb_profile.userAvatar, tb_profile.typeprofileID)
+      (tb_profile.userID, tb_profile.userFirstname, tb_profile.userLastname,tb_profile.userGender, tb_profile.userBOD, tb_profile.userEmail, tb_profile.userPhone, tb_profile.userAddress, tb_profile.imageID, tb_profile.typeprofileID)
       VALUES (?,?,?,?,?,?,?,?,?,?)`,
       [
         newUUID,
@@ -234,8 +243,13 @@ module.exports.SignUp = async (signUpRequest, result) => {
     }
   }
   if (signUpRequest.typeprofileID == 2) {
+    const ticket = await client.verifyIdToken({
+      idToken: signUpRequest.userTicketGoogle,
+      audience: CLIENT_ID,
+      maxExpiry: 60 * 60 * 24 * 365
+    });
     try {
-      const existProfile = await ExistsProfileGoogle(signUpRequest.userTicketGoogle);
+      const existProfile = await ExistsProfileGoogle(ticket);
       if (existProfile) {
         throw new Error("Profile already exists");
       }
@@ -268,10 +282,6 @@ module.exports.SignIn = async (authRequest, result) => {
       result(err, null);
     });
 };
-
-const { OAuth2Client } = require('google-auth-library');
-const CLIENT_ID = "535966501060-u53clbgqvolg9iso836ldg10on8egmeo.apps.googleusercontent.com";
-const client = new OAuth2Client(CLIENT_ID);
 
 module.exports.SignInWithGoogle = async (user, result) => {
   const ticket = await client.verifyIdToken({
